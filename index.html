@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tauri App</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <div id="editor"></div>
+    <div id="status-bar">
+      <div id="actions">
+        <button id="new">New</button>
+        <button id="open">Open</button>
+        <button id="save">Save</button>
+      </div>
+
+      <select name="language" id="language">
+        <option value="javascript">JavaScript</option>
+        <option value="typescript">TypeScript</option>
+        <option value="html">HTML</option>
+        <option value="css">CSS</option>
+      </select>
+    </div>
+  </body>
+</html>
