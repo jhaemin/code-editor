@@ -12,17 +12,7 @@
   },
   "tauri": {
     "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "dialog": {
-        "all": true
-      },
-      "fs": {
-        "all": true
-      }
+      "all": true
     },
     "bundle": {
       "active": true,
@@ -68,7 +58,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "Code Editor",
+        "title": "",
         "width": 800,
         "minWidth": 300,
         "minHeight": 300
