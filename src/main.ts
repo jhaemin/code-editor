@@ -1,11 +1,12 @@
-import { editor, KeyCode, KeyMod } from 'monaco-editor'
+import { open, save } from '@tauri-apps/api/dialog'
+import { readTextFile, writeTextFile } from '@tauri-apps/api/fs'
+import { appWindow } from '@tauri-apps/api/window'
+import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
+import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
-import { open, save, message } from '@tauri-apps/api/dialog'
-import { readTextFile, writeTextFile } from '@tauri-apps/api/fs'
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -25,7 +26,7 @@ self.MonacoEnvironment = {
   },
 }
 
-let codeEditor: editor.IStandaloneCodeEditor
+let codeEditor: monaco.editor.IStandaloneCodeEditor
 let filePath: string | null = null
 
 const setLanguage = (
@@ -41,14 +42,31 @@ const setLanguage = (
 
   languageDom.value = convertedLanguage
 
-  const newModel = editor.createModel(codeEditor.getValue(), convertedLanguage)
+  const newModel = monaco.editor.createModel(
+    codeEditor.getValue(),
+    convertedLanguage
+  )
 
   codeEditor.setModel(newModel)
+}
+
+const openFile = async (path: string) => {
+  const extension = path.split('.').pop()
+  const file = await readTextFile(path)
+
+  setLanguage(extension as any)
+  codeEditor.setValue(file)
+
+  filePath = path
+  appWindow.setTitle(path)
+
+  codeEditor.focus()
 }
 
 const newFile = () => {
   filePath = null
   codeEditor.setValue('')
+  appWindow.setTitle('Untitled')
 }
 
 const saveFile = async () => {
@@ -59,6 +77,7 @@ const saveFile = async () => {
       console.log(saved)
       await writeTextFile(saved, codeEditor.getValue())
       filePath = saved
+      appWindow.setTitle(saved)
     }
 
     return
@@ -66,12 +85,12 @@ const saveFile = async () => {
 
   await writeTextFile(filePath, codeEditor.getValue())
 
-  await message('Saved')
+  appWindow.setTitle(filePath)
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   const editorDom = document.getElementById('editor')!
-  codeEditor = editor.create(editorDom, {
+  codeEditor = monaco.editor.create(editorDom, {
     automaticLayout: true,
     fontSize: 14,
     minimap: {
@@ -81,9 +100,17 @@ window.addEventListener('DOMContentLoaded', () => {
     renderLineHighlight: 'none',
   })
 
+  newFile()
+
   codeEditor.focus()
 
-  codeEditor.addCommand(KeyMod.CtrlCmd | KeyCode.KeyS, saveFile)
+  codeEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, saveFile)
+
+  codeEditor.onDidChangeModelContent(() => {
+    codeEditor.getModel()?.onDidChangeContent(() => {
+      appWindow.setTitle(`${filePath ?? 'Untitled'} *`)
+    })
+  })
 
   const languageDom = document.getElementById('language')!
 
@@ -113,16 +140,7 @@ window.addEventListener('DOMContentLoaded', () => {
     } else if (selectedFile === null) {
       // user cancelled the selection
     } else {
-      // user selected a single file
-      console.log(selectedFile)
-
-      filePath = selectedFile
-
-      const extension = selectedFile.split('.').pop()
-      const file = await readTextFile(selectedFile)
-
-      setLanguage(extension as any)
-      codeEditor.setValue(file)
+      await openFile(selectedFile)
     }
   })
 
